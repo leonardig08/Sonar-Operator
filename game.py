@@ -9,16 +9,35 @@ from pygame_widgets.button import Button
 import pygame_widgets
 from threading import Timer
 import random
-from img import Target
 
 pygame.init()
 
+
+class Target:
+    def __init__(self, x, y, radius, surface):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.surface = surface
+        self.color = (255, 0, 0, 160)
+
+    def draw(self):
+        pygame.draw.circle(self.surface, self.color, (self.x, self.y), self.radius, width=3)
+        pygame.draw.line(self.surface, self.color, (self.x - self.radius - 10, self.y),
+                         (self.x + self.radius + 10, self.y), width=3)
+        pygame.draw.line(self.surface, self.color, (self.x, self.y - self.radius - 10),
+                         (self.x, self.y + self.radius + 10), width=3)
+
+
 def tim():
     return
-def calculate_new_xy(old_xy, speed, angle_in_degrees):
+
+
+def calculate_new_xy(old_xy, speeded, angle_in_degrees):
     move_vec = pygame.math.Vector2()
-    move_vec.from_polar((speed, angle_in_degrees))
+    move_vec.from_polar((speeded, angle_in_degrees))
     return old_xy + move_vec
+
 
 size = 700, 500
 sizerad = 500, 500
@@ -59,6 +78,8 @@ torpedofired = False
 inflag = False
 radrect = radsurf.get_rect()
 pole = pygame.math.Vector2(radrect.center)
+
+
 def changetarget():
     global selected
     maxer = len(radsees)
@@ -72,28 +93,41 @@ def changetarget():
             selected = 0
         else:
             selected += 1
+
+
 def desel():
     global selected, target
     selected = None
     target = None
+
+
 def targetship():
     global selected, target
     if selected is not None:
         target = selected
+
+
 def firetorpedo():
     global torpedofired, torpedoes, selected, target, cntse
     if not torpedofired and selected is not None and target is not None:
-        torpedoes = (250, 250, 0, 90) #calcangle((xlaunch, ylaunch), (contacts[target][0], contacts[target][1]))
+        torpedoes = (250, 250, 0, 90)  # calcangle((xlaunch, ylaunch), (contacts[target][0], contacts[target][1]))
         torpedofired = True
+
 
 def calcangle(xyaut, xytarg):
     pols = Vector2(xyaut)
     ner, anglers = (xytarg - pols).as_polar()
     return anglers
-btt = Button(win=screener, x=540, y=30, text="Next contact", width=120, height=50, onClick=changetarget, pressedColour=(0, 200, 20), radius=20)
-bttdes = Button(win=screener, x=525, y=90, text="Deselect contact", width=150, height=50, onClick=desel, pressedColour=(0, 200, 20), radius=20)
-btttar = Button(win=screener, x=525, y=150, text="Target contact", width=150, height=50, onClick=targetship, pressedColour=(0, 200, 20), radius=20)
-bttfire = Button(win=screener, x=550, y=250, text="FIRE", width=100, height=100, onClick=firetorpedo, pressedColour=(255, 0, 0), radius=100, colour=Color("red"))
+
+
+btt = Button(win=screener, x=540, y=30, text="Next contact", width=120, height=50, onClick=changetarget,
+             pressedColour=(0, 200, 20), radius=20)
+bttdes = Button(win=screener, x=525, y=90, text="Deselect contact", width=150, height=50, onClick=desel,
+                pressedColour=(0, 200, 20), radius=20)
+btttar = Button(win=screener, x=525, y=150, text="Target contact", width=150, height=50, onClick=targetship,
+                pressedColour=(0, 200, 20), radius=20)
+bttfire = Button(win=screener, x=550, y=250, text="FIRE", width=100, height=100, onClick=firetorpedo,
+                 pressedColour=(255, 0, 0), radius=100, colour=Color("red"))
 pygame.mixer.init()
 while run:
     events = pygame.event.get()
@@ -101,8 +135,8 @@ while run:
     hitboxes = []
     choice = random.randint(1, 600)
     if selected is not None:
-        xsel = radsees[selected][0]-10
-        ysel = radsees[selected][1]-10
+        xsel = radsees[selected][0] - 10
+        ysel = radsees[selected][1] - 10
     else:
         xsel = None
         ysel = None
@@ -114,8 +148,8 @@ while run:
         radsees.append(nowlist[0:2])
     for i in contacts:
         index = contacts.index(i)
-        hdg = i[2] + (random.randint(-17, 20))
-        coords = calculate_new_xy((i[0], i[1]), i[3] / 100, hdg) # i2 + 90 true nav heading
+        hdg = i[2] + (random.randint(-10, 13))
+        coords = calculate_new_xy((i[0], i[1]), i[3] / 100, hdg)  # i2 + 90 true nav heading
         contacts[index] = (coords[0], coords[1], hdg, i[3])
         speed = i[3]
         if 7 >= speed >= -7:
@@ -192,7 +226,7 @@ while run:
             surf = pygame.transform.rotozoom(surf, targethdg, 1)
             print(f"{targethdg};{heading}")
             radsurf.blit(surf, torpedoonwater.center)
-            #pygame.draw.rect(radsurf, color=(0, 0, 0), rect=torpedoonwater)
+            # pygame.draw.rect(radsurf, color=(0, 0, 0), rect=torpedoonwater)
 
     angle = (angle + 1) % 360
     x = radc[0] + math.cos(math.radians(angle)) * radl
