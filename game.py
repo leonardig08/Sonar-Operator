@@ -5,7 +5,9 @@ import math
 
 from pygame import Vector2
 from pygame.locals import *
+import pygame.freetype
 from pygame_widgets.button import Button
+from pygame_widgets.toggle import Toggle
 import pygame_widgets
 from threading import Timer
 import random
@@ -39,14 +41,18 @@ def calculate_new_xy(old_xy, speeded, angle_in_degrees):
     return old_xy + move_vec
 
 
-size = 700, 500
+size = 800, 500
 sizerad = 500, 500
-sizeinter = 200, 500
+sizeinter = 300, 500
+displaysize = 250, 200
+displaybase = 280, 230
 screener = pygame.display.set_mode(size)
 screen = pygame.surface.Surface(sizerad, pygame.SRCALPHA)
 clock = pygame.time.Clock()
 interface = pygame.Surface(sizeinter, pygame.SRCALPHA)
-data = pygame.Surface(sizeinter, pygame.SRCALPHA)
+data = pygame.Surface(displaysize, pygame.SRCALPHA)
+datasurf = pygame.Surface(displaybase, pygame.SRCALPHA)
+dataoff = pygame.Surface(displaysize, pygame.SRCALPHA)
 run = True
 radc = (250, 250)
 radl = 1000
@@ -78,33 +84,39 @@ torpedofired = False
 inflag = False
 radrect = radsurf.get_rect()
 pole = pygame.math.Vector2(radrect.center)
+pygame.mixer_music.load("res/audio/ambience.mp3")
+pygame.mixer_music.set_volume(0.2)
+pygame.mixer_music.play()
 
 
 def changetarget():
-    global selected
-    maxer = len(radsees)
-    if selected is None:
-        if maxer == 0:
-            selected = None
-            return
-        selected = 0
-    else:
-        if maxer - 1 == selected:
+    if not torpedofired:
+        global selected
+        maxer = len(radsees)
+        if selected is None:
+            if maxer == 0:
+                selected = None
+                return
             selected = 0
         else:
-            selected += 1
+            if maxer - 1 == selected:
+                selected = 0
+            else:
+                selected += 1
 
 
 def desel():
-    global selected, target
-    selected = None
-    target = None
+    if not torpedofired:
+        global selected, target
+        selected = None
+        target = None
 
 
 def targetship():
-    global selected, target
-    if selected is not None:
-        target = selected
+    if not torpedofired:
+        global selected, target
+        if selected is not None:
+            target = selected
 
 
 def firetorpedo():
@@ -115,25 +127,37 @@ def firetorpedo():
 
 
 def calcangle(xyaut, xytarg):
-    pols = Vector2(xyaut)
-    ner, anglers = (xytarg - pols).as_polar()
+    pols = Vector2(xytarg)
+    ner, anglers = (pols - xyaut).as_polar()
     return anglers
 
 
-btt = Button(win=screener, x=540, y=30, text="Next contact", width=120, height=50, onClick=changetarget,
-             pressedColour=(0, 200, 20), radius=20)
-bttdes = Button(win=screener, x=525, y=90, text="Deselect contact", width=150, height=50, onClick=desel,
-                pressedColour=(0, 200, 20), radius=20)
-btttar = Button(win=screener, x=525, y=150, text="Target contact", width=150, height=50, onClick=targetship,
-                pressedColour=(0, 200, 20), radius=20)
-bttfire = Button(win=screener, x=550, y=250, text="FIRE", width=100, height=100, onClick=firetorpedo,
-                 pressedColour=(255, 0, 0), radius=100, colour=Color("red"))
+btt = Button(win=screener, x=573, y=30, text="Next", width=70, height=70, onClick=changetarget,
+             pressedColour=(0, 200, 20), radius=10, fontSize=18, shadowDistance=1)
+bttdes = Button(win=screener, x=659, y=30, text="Deselect", width=70, height=70, onClick=desel,
+                pressedColour=(0, 200, 20), radius=10, fontSize=18, shadowDistance=1)
+btttar = Button(win=screener, x=573, y=110, text="Target", width=70, height=70, onClick=targetship,  # 15
+                pressedColour=(0, 200, 20), radius=10, fontSize=18, shadowDistance=1)
+bttfire = Button(win=screener, x=659, y=110, text="FIRE", width=70, height=70, onClick=firetorpedo,
+                 pressedColour=(255, 0, 0), radius=10, colour=Color("red"), fontSize=18, shadowDistance=1)
+displaybtt = Toggle(win=screener, x=680, y=200, width=20, height=20, handleOnColour=Color("green"), handleOffColour=Color("red"))
+radbtt = Toggle(win=screener, x=600, y=200, width=20, height=20, handleOnColour=Color("green"), handleOffColour=Color("red"))
 pygame.mixer.init()
+offlayer = pygame.Surface(sizerad, pygame.SRCALPHA)
+radbase = pygame.Surface(sizerad)
 while run:
+    ondis = displaybtt.getValue()
+    onrad = radbtt.getValue()
     events = pygame.event.get()
     collisions = []
     hitboxes = []
-    choice = random.randint(1, 600)
+    offlayer.fill((100, 100, 100, 60))
+    radbase.fill((0, 0, 0))
+    if not contacts:
+        choice = random.randint(1, 50)
+    else:
+        choice = random.randint(1, 1200)
+    datasurf.fill(color=Color("black"))
     if selected is not None:
         xsel = radsees[selected][0] - 10
         ysel = radsees[selected][1] - 10
@@ -142,14 +166,14 @@ while run:
         ysel = None
     if choice == 50:
         contacts.append(
-            (random.randint(200, 300), random.randint(200, 300), random.randint(-180, 180), random.randint(1, 7)))
+            (random.randint(100, 400), random.randint(100, 400), random.randint(-180, 180), random.randint(1, 7)))
         lastcnt = len(contacts) - 1
         nowlist = contacts[lastcnt]
         radsees.append(nowlist[0:2])
     for i in contacts:
         index = contacts.index(i)
-        hdg = i[2] + (random.randint(-10, 13))
-        coords = calculate_new_xy((i[0], i[1]), i[3] / 100, hdg)  # i2 + 90 true nav heading
+        hdg = i[2] + (random.randint(-2, 5) / 10)
+        coords = calculate_new_xy((i[0], i[1]), i[3] / 90, hdg)  # i2 + 90 true nav heading
         contacts[index] = (coords[0], coords[1], hdg, i[3])
         speed = i[3]
         if 7 >= speed >= -7:
@@ -167,6 +191,8 @@ while run:
     radsurf.fill((0, 255, 0, 60))
     screener.fill((50, 50, 50))
     pygame_widgets.update(events)
+    dataoff.fill((100, 100, 100, 60))
+    data.fill((0, 255, 0, 60))
     for e in events:
         if e.type == QUIT or (e.type == KEYDOWN and e.key == K_ESCAPE):
             run = False
@@ -203,6 +229,7 @@ while run:
                 speed += 0.01
             oldxy = (torpedoes[0], torpedoes[1])
             newxy = calculate_new_xy(oldxy, speed, heading)
+            coords = newxy
             if pygame.math.Vector2(newxy).distance_to((destroytarget[0], destroytarget[1])) > 0:
                 if abs(targethdg - heading) < 1:
                     if heading < targethdg:
@@ -220,11 +247,16 @@ while run:
                         rot = (heading - 3) % 360
             torpedoes = (newxy[0], newxy[1], speed, heading)
             torpedoonwater = pygame.Rect(torpedoes[0] - 5, torpedoes[1] - 12.5, 10, 25)
+            vectx = destroytarget[0] - torpedoes[0]
+            vecty = destroytarget[1] - torpedoes[1]
+            rads = math.atan2(vecty, vectx) - math.pi / 2
+            rads %= 2 * math.pi
+            direr = math.degrees(rads)
             surf = radsurf.subsurface(torpedoonwater)
             surf = surf.copy()
             surf.fill(Color("black"))
-            surf = pygame.transform.rotozoom(surf, targethdg, 1)
-            print(f"{targethdg};{heading}")
+            surf = pygame.transform.rotozoom(surf, direr, 1)
+            print(f"{targethdg};{heading};{direr}")
             radsurf.blit(surf, torpedoonwater.center)
             # pygame.draw.rect(radsurf, color=(0, 0, 0), rect=torpedoonwater)
 
@@ -266,10 +298,19 @@ while run:
     """for i in hitboxes:
         pygame.draw.rect(radsurf, Color("blue"), i)"""
     line = pygame.draw.line(screen, Color("green"), radc, (x, y), width=0)
-    for i in hitboxes:
-        pygame.draw.rect(screen, Color("blue"), i)
-    screen.blit(radsurf, (0, 0))
-    screener.blit(screen, (0, 0))
+    """for i in hitboxes:
+        pygame.draw.rect(screen, Color("blue"), i)"""
+    screener.blit(radbase, (0, 0))
+    if onrad:
+        screen.blit(radsurf, (0, 0))
+        screener.blit(screen, (0, 0))
+    else:
+        screener.blit(offlayer, (0, 0))
+    if ondis:
+        datasurf.blit(data, (15, 15))
+    else:
+        datasurf.blit(dataoff, (15, 15))
+    screener.blit(datasurf, (510, 250))
     pygame.display.flip()
     clock.tick(140)
 
