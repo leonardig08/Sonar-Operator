@@ -87,6 +87,7 @@ pole = pygame.math.Vector2(radrect.center)
 pygame.mixer_music.load("res/audio/ambience.mp3")
 pygame.mixer_music.set_volume(0.2)
 pygame.mixer_music.play()
+font0 = pygame.font.Font("res/font/ocra.ttf", 35)
 
 
 def changetarget():
@@ -130,6 +131,19 @@ def calcangle(xyaut, xytarg):
     pols = Vector2(xytarg)
     ner, anglers = (pols - xyaut).as_polar()
     return anglers
+
+def genscreen():
+    surfer = pygame.Surface(displaysize, pygame.SRCALPHA)
+    surfer.fill((255, 255, 255, 0))
+    if selected is None and target is None:
+        txt = font0.render("[NO TARGET]", True, (0, 150, 0))
+        txt2 = font0.render("[SELECTED]", True, (0, 150, 0))
+        txtlen = [txt.get_width(), txt.get_height()]
+        txt2len = [txt2.get_width(), txt2.get_height()]
+
+        surfer.blit(txt, (displaysize[0]/2 - txtlen[0]/2, displaysize[1]/2 - txtlen[1]))
+        surfer.blit(txt2, (displaysize[0]/2 - txt2len[0]/2, displaysize[1]/2))
+    return surfer
 
 
 btt = Button(win=screener, x=573, y=30, text="Next", width=70, height=70, onClick=changetarget,
@@ -307,6 +321,8 @@ while run:
     else:
         screener.blit(offlayer, (0, 0))
     if ondis:
+        surftext = genscreen()
+        data.blit(surftext, (0, 0))
         datasurf.blit(data, (15, 15))
     else:
         datasurf.blit(dataoff, (15, 15))
