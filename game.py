@@ -1,4 +1,5 @@
 import sys
+import textwrap
 
 import pygame
 import math
@@ -88,6 +89,7 @@ pygame.mixer_music.load("res/audio/ambience.mp3")
 pygame.mixer_music.set_volume(0.2)
 pygame.mixer_music.play()
 font0 = pygame.font.Font("res/font/ocra.ttf", 35)
+font1 = pygame.font.Font("res/font/ocra.ttf", 20)
 
 
 def changetarget():
@@ -132,17 +134,53 @@ def calcangle(xyaut, xytarg):
     ner, anglers = (pols - xyaut).as_polar()
     return anglers
 
+
 def genscreen():
     surfer = pygame.Surface(displaysize, pygame.SRCALPHA)
     surfer.fill((255, 255, 255, 0))
+    col = (0, 150, 0)
     if selected is None and target is None:
-        txt = font0.render("[NO TARGET]", True, (0, 150, 0))
-        txt2 = font0.render("[SELECTED]", True, (0, 150, 0))
+        txt = font0.render("[NO TARGET]", True, col)
+        txt2 = font0.render("[SELECTED]", True, col)
         txtlen = [txt.get_width(), txt.get_height()]
         txt2len = [txt2.get_width(), txt2.get_height()]
 
-        surfer.blit(txt, (displaysize[0]/2 - txtlen[0]/2, displaysize[1]/2 - txtlen[1]))
-        surfer.blit(txt2, (displaysize[0]/2 - txt2len[0]/2, displaysize[1]/2))
+        surfer.blit(txt, (displaysize[0] / 2 - txtlen[0] / 2, displaysize[1] / 2 - txtlen[1]))
+        surfer.blit(txt2, (displaysize[0] / 2 - txt2len[0] / 2, displaysize[1] / 2))
+    else:
+        if target is not None:
+            ship = target
+            rep = 0
+        else:
+            ship = selected
+            rep = 1
+        texts = []
+        dats = contacts[ship]
+        datsfal = radsees[ship]
+        datsfal = list(datsfal)
+        for cor in range(len(datsfal)):
+            datsfal[cor] = round(datsfal[cor])
+        datsfal = tuple(datsfal)
+        texts.append(font1.render(f"Heading: {round(dats[2])}", True, col))
+        texts.append(font1.render(f"Coords: {datsfal}", True, col))
+        texts.append(font1.render(f"Speed: {round(dats[3])}", True, col))
+        sumers = 0
+        for mis in texts:
+            sumers += mis.get_height()
+        sumers = sumers / 2
+        for mis in texts:
+            surfer.blit(mis, (10, sumers))
+            sumers += mis.get_height()/2
+        if rep == 1:
+            text = font0.render("[SELECTED]", True, col)
+            txtlen = [text.get_width(), text.get_height()]
+            surfer.blit(text, (displaysize[0] / 2 - txtlen[0] / 2, sumers + 20))
+        else:
+            text = font0.render("[TARGETED]", True, col)
+            txtlen = [text.get_width(), text.get_height()]
+            surfer.blit(text, (displaysize[0] / 2 - txtlen[0] / 2, sumers + 20))
+
+
     return surfer
 
 
@@ -150,12 +188,14 @@ btt = Button(win=screener, x=573, y=30, text="Next", width=70, height=70, onClic
              pressedColour=(0, 200, 20), radius=10, fontSize=18, shadowDistance=1)
 bttdes = Button(win=screener, x=659, y=30, text="Deselect", width=70, height=70, onClick=desel,
                 pressedColour=(0, 200, 20), radius=10, fontSize=18, shadowDistance=1)
-btttar = Button(win=screener, x=573, y=110, text="Target", width=70, height=70, onClick=targetship,  # 15
+btttar = Button(win=screener, x=573, y=110, text="Target", width=70, height=70, onClick=targetship,
                 pressedColour=(0, 200, 20), radius=10, fontSize=18, shadowDistance=1)
 bttfire = Button(win=screener, x=659, y=110, text="FIRE", width=70, height=70, onClick=firetorpedo,
                  pressedColour=(255, 0, 0), radius=10, colour=Color("red"), fontSize=18, shadowDistance=1)
-displaybtt = Toggle(win=screener, x=680, y=200, width=20, height=20, handleOnColour=Color("green"), handleOffColour=Color("red"))
-radbtt = Toggle(win=screener, x=600, y=200, width=20, height=20, handleOnColour=Color("green"), handleOffColour=Color("red"))
+displaybtt = Toggle(win=screener, x=680, y=200, width=20, height=20, handleOnColour=Color("green"),
+                    handleOffColour=Color("red"))
+radbtt = Toggle(win=screener, x=600, y=200, width=20, height=20, handleOnColour=Color("green"),
+                handleOffColour=Color("red"))
 pygame.mixer.init()
 offlayer = pygame.Surface(sizerad, pygame.SRCALPHA)
 radbase = pygame.Surface(sizerad)
@@ -187,17 +227,18 @@ while run:
     for i in contacts:
         index = contacts.index(i)
         hdg = i[2] + (random.randint(-2, 5) / 10)
-        coords = calculate_new_xy((i[0], i[1]), i[3] / 90, hdg)  # i2 + 90 true nav heading
-        contacts[index] = (coords[0], coords[1], hdg, i[3])
+        if hdg >= 360:
+            hdg -= 360
+        coords = calculate_new_xy((i[0], i[1]), i[3] / 90, hdg)
         speed = i[3]
-        if 7 >= speed >= -7:
+        if 7 >= speed >= 0:
             speed = i[3] + (random.randint(-1, 1) / 10)
         elif speed > 7:
             speed -= 0.1
         else:
             speed += 0.1
         nowi = contacts[index]
-        contacts[index] = (nowi[0], nowi[1], nowi[2], speed)
+        contacts[index] = (coords[0], coords[1], hdg, speed)
     for i in contacts:
         hitboxes.append(pygame.Rect(i[0] - radius, i[1] - radius, radius * 2, radius * 2))
     screen.fill((0, 0, 0))
@@ -244,7 +285,7 @@ while run:
             oldxy = (torpedoes[0], torpedoes[1])
             newxy = calculate_new_xy(oldxy, speed, heading)
             coords = newxy
-            if pygame.math.Vector2(newxy).distance_to((destroytarget[0], destroytarget[1])) > 0:
+            if pygame.math.Vector2(newxy).distance_to((250, 250)) > 3:
                 if abs(targethdg - heading) < 1:
                     if heading < targethdg:
                         heading += abs(targethdg - heading)
@@ -270,9 +311,7 @@ while run:
             surf = surf.copy()
             surf.fill(Color("black"))
             surf = pygame.transform.rotozoom(surf, direr, 1)
-            print(f"{targethdg};{heading};{direr}")
             radsurf.blit(surf, torpedoonwater.center)
-            # pygame.draw.rect(radsurf, color=(0, 0, 0), rect=torpedoonwater)
 
     angle = (angle + 1) % 360
     x = radc[0] + math.cos(math.radians(angle)) * radl
