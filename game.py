@@ -1,9 +1,6 @@
 import sys
-import textwrap
-
 import pygame
 import math
-
 from pygame import Vector2
 from pygame.locals import *
 import pygame.freetype
@@ -50,6 +47,7 @@ displaybase = 280, 230
 screener = pygame.display.set_mode(size)
 screen = pygame.surface.Surface(sizerad, pygame.SRCALPHA)
 clock = pygame.time.Clock()
+pygame.display.set_caption("Sonar Operator version 0.1")
 interface = pygame.Surface(sizeinter, pygame.SRCALPHA)
 data = pygame.Surface(displaysize, pygame.SRCALPHA)
 datasurf = pygame.Surface(displaybase, pygame.SRCALPHA)
@@ -123,7 +121,7 @@ def targetship():
 
 
 def firetorpedo():
-    global torpedofired, torpedoes, selected, target, cntse
+    global torpedofired, torpedoes, selected, target
     if not torpedofired and selected is not None and target is not None:
         torpedoes = (250, 250, 0, 90)  # calcangle((xlaunch, ylaunch), (contacts[target][0], contacts[target][1]))
         torpedofired = True
@@ -170,7 +168,7 @@ def genscreen():
         sumers = sumers / 2
         for mis in texts:
             surfer.blit(mis, (10, sumers))
-            sumers += mis.get_height()/2
+            sumers += mis.get_height() / 2
         if rep == 1:
             text = font0.render("[SELECTED]", True, col)
             txtlen = [text.get_width(), text.get_height()]
@@ -179,7 +177,6 @@ def genscreen():
             text = font0.render("[TARGETED]", True, col)
             txtlen = [text.get_width(), text.get_height()]
             surfer.blit(text, (displaysize[0] / 2 - txtlen[0] / 2, sumers + 20))
-
 
     return surfer
 
@@ -339,7 +336,7 @@ while run:
                 radsees[hitboxes.index(i)] = tuple(list(contacts[hitboxes.index(i)][0:2]))
         if circle.contains(i):
             if target == hitboxes.index(i) or selected == hitboxes.index(i):
-                if check == True and target is None:
+                if check is True and target is None:
                     pygame.draw.rect(screen, Color("blue"), rectselec, width=2)
                 if target is not None:
                     targx = radsees[target][0]
